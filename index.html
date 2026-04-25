@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="S-DES (Simplified DES) kriptografi algoritmasının çalışma modları (ECB, CBC, OFB), kaba kuvvet (brute-force) ve diferansiyel analiz test simülatörü.">
+
+    <meta name="keywords"
+        content="S-DES, kriptografi, diferansiyel analiz, brute-force, s-des simülatör, s-des hesaplayıcı, bilgisayar mühendisliği">
+
+    <meta name="author" content="Harun Avcı">
+    <title>S-DES Çalışma Modları ve Orijinal Testler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+
+<body class="min-h-screen flex flex-col pb-20">
+
+    <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wider text-sky-400 uppercase">S-DES <span class="text-slate-100">MODES
+                    LAB</span></h1>
+            <div class="flex gap-2">
+                <button onclick="loadExample(0)"
+                    class="text-xs px-3 py-1.5 border border-slate-700 rounded hover:bg-slate-800 hover:text-sky-400 transition">Örnek
+                    Çekirdek</button>
+                <button onclick="loadExample(1)"
+                    class="text-xs px-3 py-1.5 border border-slate-700 rounded hover:bg-slate-800 hover:text-sky-400 transition">Örnek
+                    CBC</button>
+                <button onclick="loadExample(2)"
+                    class="text-xs px-3 py-1.5 border border-slate-700 rounded hover:bg-slate-800 hover:text-sky-400 transition">Örnek
+                    OFB</button>
+                <button id="btn-reset-all"
+                    class="text-xs px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded hover:bg-red-500/20 transition">Sıfırla</button>
+            </div>
+
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl mx-auto w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <div class="lg:col-span-4 flex flex-col gap-6">
+
+            <div id="config-panel"
+                class="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 shadow-xl transition-all duration-500">
+                <h2
+                    class="text-sm font-bold text-sky-400 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">
+                    Simülasyon Parametreleri</h2>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1" id="inp-text-label">Girdi
+                            Metni</label>
+                        <input type="text" id="inp-text" placeholder="Plain Text"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-sky-500 mono">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 mb-1">Girdi Formatı</label>
+                            <select id="inp-format"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 font-bold text-pink-400">
+                                <option value="ASCII" selected>ASCII (Metin)</option>
+                                <option value="Binary">İkilik (Binary)</option>
+                                <option value="Hex">Onaltılık (Hex)</option>
+                                <option value="Octal">Sekizlik (Octal)</option>
+                                <option value="Decimal">Onluk (Decimal)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 mb-1">Çıktı Formatı</label>
+                            <select id="inp-out-format"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 font-bold text-teal-400">
+                                <option value="ASCII">ASCII (Metin)</option>
+                                <option value="Binary" selected>İkilik (Binary)</option>
+                                <option value="Hex">Onaltılık (Hex)</option>
+                                <option value="Octal">Sekizlik (Octal)</option>
+                                <option value="Decimal">Onluk (Decimal)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 mb-1">Çalışma Modu</label>
+                            <select id="inp-mode"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 font-bold text-sky-400">
+                                <option value="CORE">Çekirdek</option>
+                                <option value="ECB">ECB Modu</option>
+                                <option value="CBC" selected>CBC Modu</option>
+                                <option value="OFB">OFB Modu</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 mb-1">İşlem</label>
+                            <select id="inp-action"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 font-bold text-green-400">
+                                <option value="ENC">Şifrele</option>
+                                <option value="DEC">Deşifrele</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-amber-400 mb-1">10-Bit Anahtar</label>
+                            <input type="text" id="inp-key" value="0111111101" maxlength="10"
+                                class="w-full bg-slate-900 border border-amber-500/50 rounded-lg px-3 py-1.5 text-sm text-amber-200 focus:outline-none focus:border-amber-500 mono text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-purple-400 mb-1">8-Bit IV</label>
+                            <input type="text" id="inp-iv" value="10101010" maxlength="8"
+                                class="w-full bg-slate-900 border border-purple-500/50 rounded-lg px-3 py-1.5 text-sm text-purple-200 focus:outline-none focus:border-purple-500 mono text-center">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-emerald-400 mb-1">Beklenen Çıktı Değeri
+                            (Opsiyonel)</label>
+                        <input type="text" id="inp-expected" placeholder="Belenilen Çıktı"
+                            class="w-full bg-slate-900 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-sm text-emerald-200 focus:outline-none focus:border-emerald-500 mono text-center placeholder:text-emerald-900">
+                    </div>
+                </div>
+
+                <button id="btn-sim-start"
+                    class="w-full mt-4 bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition uppercase tracking-widest text-xs">
+                    ▶ Simülasyonu Başlat
+                </button>
+            </div>
+
+            <div id="diff-controls-panel"
+                class="bg-purple-950/20 border-2 border-purple-500/50 rounded-2xl p-5 shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all duration-500">
+                <h2
+                    class="text-sm font-bold text-purple-400 uppercase tracking-widest mb-4 border-b border-purple-500/30 pb-2">
+                    Diferansiyel Analiz Adımları</h2>
+                <p class="text-[10px] text-slate-400 mb-4 leading-relaxed">S-DES üzerindeki diferansiyel analiz sürecini
+                    ve S-Kutusu zayıflıklarını adım adım görselleştirir.</p>
+
+                <div class="space-y-3 mb-5">
+                    <div>
+                        <label class="block text-[10px] font-bold text-purple-300 mb-1 tracking-widest">Bilinen Açık
+                            Metin (P1)</label>
+                        <input type="text" id="pt1" value="10101010" maxlength="8"
+                            class="w-full bg-slate-900 border border-purple-500/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-purple-400 mono text-center tracking-widest shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-purple-300 mb-1 tracking-widest">Hedef Anahtar
+                            (Kırılacak)</label>
+                        <input type="text" id="tkey" value="0111111101" maxlength="10"
+                            class="w-full bg-slate-900 border border-purple-500/50 rounded-lg px-3 py-2 text-sm text-purple-300 focus:outline-none focus:border-purple-400 mono text-center tracking-[0.2em] shadow-inner font-bold">
+                    </div>
+                </div>
+
+                <button id="calcBtn"
+                    class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-[0.98] uppercase tracking-widest text-xs flex justify-center items-center gap-2">
+                    Diferansiyel Analiz Başlat
+                </button>
+            </div>
+
+            <div id="attack-controls-panel"
+                class="bg-indigo-950/20 border-2 border-indigo-500/50 rounded-2xl p-5 shadow-[0_0_15px_rgba(99,102,241,0.1)] transition-all duration-500">
+                <h2
+                    class="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-4 border-b border-indigo-500/30 pb-2">
+                    Saldırı Analizi</h2>
+                <p class="text-[10px] text-slate-400 mb-3 leading-relaxed">Diferansiyel Analiz ve Brute Force hız
+                    kıyaslama testini çalıştırır.</p>
+
+                <div class="space-y-3 mb-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-indigo-300 mb-1">Bilinen Açık Metin (P1)</label>
+                        <input type="text" id="attack-text" value="10101010" maxlength="8"
+                            class="w-full bg-slate-900 border border-indigo-500/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 mono text-center tracking-widest">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-indigo-300 mb-1">Hedef Anahtar
+                            (Kırılacak)</label>
+                        <input type="text" id="attack-key" value="0111111101" maxlength="10"
+                            class="w-full bg-slate-900 border border-indigo-500/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 mono text-center tracking-widest text-indigo-300">
+                    </div>
+                </div>
+
+                <button id="btn-run-attack"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition transform active:scale-[0.98] uppercase tracking-widest text-xs flex justify-center items-center gap-2">
+                    Kıyaslama Testini Başlat
+                </button>
+            </div>
+
+            <div id="system-tests-panel"
+                class="bg-emerald-950/20 border-2 border-emerald-500/50 rounded-2xl p-5 shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all duration-500">
+                <h2
+                    class="text-sm font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-emerald-500/30 pb-2">
+                    Zorunlu Proje Testleri</h2>
+                <p class="text-[10px] text-slate-400 mb-4 leading-relaxed">S-DES algoritmasının temel işlevlerini (T_01
+                    - T_05) ve çalışma modlarını arka planda referans değerlerle test eder.</p>
+
+                <button id="btn-run-system-tests"
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-[0.98] uppercase tracking-widest text-xs flex justify-center items-center gap-2">
+                    Tüm Zorunlu Testleri Çalıştır
+                </button>
+            </div>
+
+        </div>
+
+
+        <div class="lg:col-span-8 flex flex-col gap-6">
+
+            <div id="sim-panel" class="hidden flex-col">
+                <div
+                    class="bg-slate-800 border border-slate-700 p-3 rounded-2xl flex justify-between items-center mb-4 shadow-lg sticky top-20 z-40">
+                    <button onclick="changeStep(-1)" id="btn-prev"
+                        class="px-5 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold text-sm uppercase tracking-wider transition">←
+                        Geri</button>
+                    <div class="flex-grow mx-4">
+                        <div class="flex justify-between text-[10px] text-slate-400 font-bold uppercase mb-1">
+                            <span id="step-label">Adım 0 / 0</span>
+                            <span id="step-desc" class="text-sky-400 truncate ml-2">Başlatılıyor...</span>
+                        </div>
+                        <div class="h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                            <div id="progress-bar"
+                                class="h-full bg-gradient-to-r from-sky-500 to-indigo-500 transition-all duration-300 w-0">
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="changeStep(1)" id="btn-next"
+                        class="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-bold text-sm uppercase tracking-wider transition">İleri
+                        →</button>
+                </div>
+                <div id="step-content"
+                    class="bg-slate-800/30 border border-slate-700 rounded-2xl p-6 shadow-inner min-h-[400px]"></div>
+            </div>
+
+            <div id="test-results-panel" class="hidden flex-col">
+                <div id="results-wrapper"
+                    class="bg-slate-900/50 border-2 border-slate-500/50 rounded-2xl p-6 shadow-xl min-h-[400px]">
+                    <div class="flex justify-between items-center border-b border-slate-500/30 pb-3 mb-4">
+                        <h2 id="results-title"
+                            class="text-lg font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                            Test Sonuçları
+                        </h2>
+                        <button id="btn-close-results"
+                            class="text-slate-400 hover:text-white text-xs border border-slate-600 hover:bg-slate-700 px-3 py-1 rounded transition">Kapat
+                            ✕</button>
+                    </div>
+
+                    <div id="results-container" class="space-y-4"></div>
+                </div>
+            </div>
+            <div id="diff-step-panel" class="hidden flex-col">
+                <div id="navControls"
+                    class="hidden bg-slate-800 border border-slate-700 p-3 rounded-2xl flex justify-between items-center mb-4 shadow-lg sticky top-20 z-40">
+                    <button id="prevBtn"
+                        class="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg font-bold text-sm uppercase tracking-wider transition disabled:opacity-30">←
+                        Geri</button>
+                    <div id="stepInfo" class="text-xs font-black text-purple-400 uppercase tracking-widest mx-4">Adım 0
+                        / 7</div>
+                    <button id="nextBtn"
+                        class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold text-sm uppercase tracking-wider transition disabled:opacity-30">İleri
+                        →</button>
+                </div>
+                <div id="stepsContainer" class="bg-transparent min-h-[400px] space-y-6 pb-10"></div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script src="core/SdesUtils.js"></script>
+    <script src="core/sdes_core.js"></script>
+    <script src="core/sdes_modes.js"></script>
+    <script src="core/diff_analysis.js"></script>
+    <script src="core/sdes_attacker.js"></script>
+
+    <script src="tests/test_runner.js"></script>
+
+    <script src="ui/ui_step_controller.js"></script>
+    <script src="ui/ui_dif_step_controller.js"></script>
+    <script src="ui/ui_diff_step.js"></script>
+    <script src="ui/ui_test_controller.js"></script>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
